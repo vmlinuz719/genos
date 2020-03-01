@@ -14,6 +14,8 @@
 #define VGA_HEIGHT	25
 #define VGA_ADDRESS	0xB8000
 
+#define OSVERSION "GenOS a03012020"
+
 typedef enum vc {
 	vgaBlack	= 0,
 	vgaBlue		= 1,
@@ -53,7 +55,7 @@ uint16_t* termBuf;
 
 void termInit() {
 	termRow = termCol = 0;
-	termColor = vgaEntColor(vgaLGray, vgaBlue);
+	termColor = vgaEntColor(vgaWhite, vgaBlue);
 	termBuf = (uint16_t *)VGA_ADDRESS;
 
 	for (size_t y = 0; y < VGA_HEIGHT; y++) {
@@ -74,8 +76,9 @@ void termEntPut(char c, uint8_t color, size_t x, size_t y) {
 }
 
 void termPutChar(char c) {
-	termEntPut(c, termColor, termCol, termRow);
-	if (++termCol == VGA_WIDTH) {
+    if (c != '\n')
+	    termEntPut(c, termColor, termCol, termRow);
+	if (++termCol == VGA_WIDTH || c == '\n') {
 		termCol = 0;
 		if (++termRow == VGA_HEIGHT) {
 			// TODO: scroll
@@ -95,6 +98,8 @@ void termPrint(const char* str) {
 
 void kmain(void) {
 	termInit();
-	termPrint("BSOD");
+	termPrint(OSVERSION);
+	termPrint("\n");
+	termPrint("Copyright 2020 vmlinuz719. All rights reserved.");
 }
 
