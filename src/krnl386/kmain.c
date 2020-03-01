@@ -2,6 +2,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <fast-memcpy/memcpy.h>
+
 #if defined(__linux__)
 #error "ERROR: targeting linux (don't even try)"
 #endif
@@ -76,14 +78,19 @@ void termEntPut(char c, uint8_t color, size_t x, size_t y) {
 }
 
 void termPutChar(char c) {
-    if (c != '\n')
-	    termEntPut(c, termColor, termCol, termRow);
+	if (c != '\n')
+		termEntPut(c, termColor, termCol, termRow);
 	if (++termCol == VGA_WIDTH || c == '\n') {
 		termCol = 0;
-		if (++termRow == VGA_HEIGHT) {
-			// TODO: scroll
-			termRow = 0;
-		}
+		termRow++;
+	}
+	if (termRow == VGA_HEIGHT) {
+		termRow--;
+		memcpy(termBuf, (termBuf + VGA_WIDTH),
+				(VGA_WIDTH * (VGA_HEIGHT - 1))
+				* sizeof(uint16_t));
+		for (size_t x = 0; x < VGA_WIDTH; x++)
+			termEntPut(' ', termColor, x, VGA_HEIGHT - 1);
 	}
 }
 
@@ -96,12 +103,40 @@ void termPrint(const char* str) {
 	termWrite(str, deprecatedStrlen(str));
 }
 
+static inline void outb(uint16_t port, uint8_t val) {
+	    asm volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );
+}
+
+static inline uint8_t inb(uint16_t port) {
+	uint8_t ret;
+	asm volatile ( "inb %1, %0"
+			: "=a"(ret)
+			: "Nd"(port) );
+	return ret;
+}
+
+void termEnableCursor(uint8_t cursorStart, uint8_t cursorEnd) {
+	outb(0x3D4, 0x0A);
+	outb(0x3D5, (inb(0x3D5) & 0xC0) | cursorStart);
+
+	outb(0x3D4, 0x0B);
+	outb(0x3D5, (inb(0x3D5) & 0xE0) | cursorEnd);
+}
+
+void termDisableCursor() {
+	outb(0x3D4, 0x0A);
+	outb(0x3D5, 0x20);
+}
+
 void kmain(void) {
 	termInit();
+	termDisableCursor();
 	termPrint(OSVERSION);
 	termPrint("\n");
-	termPrint("Copyright 2020 vmlinuz719. All rights reserved.\n");
-	
+	termPrint("Copyright 2020 vmlinuz719. All rights reserved.\n\n");
+
+	termPrint("Nothing to do...\n");
+
 	termSetColor(vgaEntColor(vgaLRed, vgaBlue));
 	termPrint("\n***All available functions completed***\n");
 }
