@@ -100,6 +100,9 @@ void kmain(void) {
 	termInit();
 	termPrint(OSVERSION);
 	termPrint("\n");
-	termPrint("Copyright 2020 vmlinuz719. All rights reserved.");
+	termPrint("Copyright 2020 vmlinuz719. All rights reserved.\n");
+	
+	termSetColor(vgaEntColor(vgaLRed, vgaBlue));
+	termPrint("\n***All available functions completed***\n");
 }
 
