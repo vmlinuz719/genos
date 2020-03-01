@@ -32,6 +32,8 @@ _start:
 
 	/* TODO: Load paging, GDT, IDT, call C++ global constructors */
 
+	push	%eax
+	push	%ebx
 	call	kmain
 
 	/* Kernel should never return!!! */

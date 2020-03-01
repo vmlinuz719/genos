@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include <fast-memcpy/memcpy.h>
+#include <multiboot.h>
 
 #if defined(__linux__)
 #error "ERROR: targeting linux (don't even try)"
@@ -16,7 +17,7 @@
 #define VGA_HEIGHT	25
 #define VGA_ADDRESS	0xB8000
 
-#define OSVERSION "GenOS a03012020"
+#define OSVERSION "GenOS a03022020"
 
 typedef enum vc {
 	vgaBlack	= 0,
@@ -128,16 +129,22 @@ void termDisableCursor() {
 	outb(0x3D5, 0x20);
 }
 
-void kmain(void) {
+void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	termInit();
 	termDisableCursor();
 	termPrint(OSVERSION);
 	termPrint("\n");
 	termPrint("Copyright 2020 vmlinuz719. All rights reserved.\n\n");
 
-	termPrint("Nothing to do...\n");
+	(void)mbd;
+	if (magic == MULTIBOOT_BOOTLOADER_MAGIC) {
+		termPrint("Got multiboot info (0x2BADB002)\n");
+	} else {
+		termSetColor(vgaEntColor(vgaLRed, vgaBlue));
+		termPrint("FATAL: GenOS requires a Multiboot-compliant bootloader!\n");
+	}
 
-	termSetColor(vgaEntColor(vgaLRed, vgaBlue));
+	termSetColor(vgaEntColor(vgaLGreen, vgaBlue));
 	termPrint("\n***All available functions completed***\n");
 }
 
