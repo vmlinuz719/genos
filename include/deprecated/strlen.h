@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 size_t deprecatedStrlen(const char* str);
+void int2Hex(uint64_t x, char *buf, size_t size);
 
 #endif
 
