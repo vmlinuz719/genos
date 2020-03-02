@@ -107,4 +107,5 @@ void kFree(void *ptr) {
 		prevFree->next = nextFree->next;
 		nextFree->next->prev = prevFree;
 	}
+	lastFree = prevFree;
 }
