@@ -1,5 +1,5 @@
 #include <syslib/heap.h>
-#include <vga.h>
+// #include <vga.h>
 
 HeapDescriptor *heapStart;
 HeapDescriptor *heapEnd;
@@ -65,7 +65,7 @@ void *kMalloc(size_t size) {
 
 	hd->used = true;
 
-	if (size < kDescriptorRealSize(hd) - sizeof(HeapDescriptor)) {
+	if (kDescriptorRealSize(hd) > size + sizeof(HeapDescriptor)) {
 		HeapDescriptor *new =
 			(HeapDescriptor *)
 			((uint8_t *)hd + size + sizeof(HeapDescriptor));
@@ -90,12 +90,14 @@ void kFree(void *ptr) {
 	while (prevFree->prev != NULL
 		&& prevFree->prev->usable
 		&& !(prevFree->prev->used)) {
+		// termPrint("zip down\n");
 		prevFree = prevFree->prev;
 	}
 
 	while (nextFree->next != NULL
 		&& nextFree->next->usable
 		&& !(nextFree->next->used)) {
+		// termPrint("zip up\n");
 		nextFree = nextFree->next;
 	}
 
