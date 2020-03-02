@@ -74,5 +74,7 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 end:
 	termSetColor(vgaEntColor(vgaLGreen, vgaBlue));
 	termPrint("\n***All available functions completed***\n");
+
+	// for (;;) termPrint("ANIMOSITISOMIN");
 }
 
