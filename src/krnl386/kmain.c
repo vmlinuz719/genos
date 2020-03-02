@@ -75,7 +75,8 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	termPrint("\nInitializing heap...\n\n");
 
 	intStatus((int)heap);
-	termPrint("             Heap address\n");
+	intStatus((int)HEAP_SIZE);
+	termPrint("Heap base, length\n");
 
 	kHeapInit(heap, HEAP_SIZE);
 
