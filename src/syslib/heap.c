@@ -48,14 +48,23 @@ size_t kDescriptorRealSize(HeapDescriptor *hd) {
 }
 
 void *kMalloc(size_t size) {
-	HeapDescriptor *hd = heapStart;
-
-	while(hd != NULL &&
-		(!(hd->usable)
-		|| hd->used
-		|| kDescriptorRealSize(hd) < size)) {
-		if (hd->magic != HEAP_MAGIC) return NULL;
-		hd = hd->next;
+	HeapDescriptor *hd = lastFree;
+	if (hd != NULL && hd->magic == HEAP_MAGIC
+		&& hd->usable && !(hd->used)
+		&& size <= kDescriptorRealSize(hd)) {
+		// resurrect last freed block
+		// termPrint("resurrecting\n");
+	}
+	else {
+		// go fish
+		hd = heapStart;
+		while (hd != NULL &&
+			(!(hd->usable)
+			|| hd->used
+			|| kDescriptorRealSize(hd) < size)) {
+			if (hd->magic != HEAP_MAGIC) return NULL;
+			hd = hd->next;
+		}
 	}
 
 	if (hd == NULL || hd->magic != HEAP_MAGIC) {

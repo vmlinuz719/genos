@@ -103,7 +103,7 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	kHeapInit(heap, HEAP_SIZE);
 
 	intStatus(kDescriptorRealSize(heapStart));
-	termPrint("Real heap size\n\n");
+	termPrint("Real initial heap size\n\n");
 
 	initGDT();
 
