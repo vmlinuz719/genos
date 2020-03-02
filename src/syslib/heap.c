@@ -78,5 +78,31 @@ void *kMalloc(size_t size) {
 	return (void *)((uint8_t *)hd + sizeof(HeapDescriptor));
 }
 
+void kFree(void *ptr) {
+	HeapDescriptor *hd =
+		(HeapDescriptor *)((uint8_t *)ptr - sizeof(HeapDescriptor));
 
+	hd->used = false;
 
+	HeapDescriptor *prevFree = hd;
+	HeapDescriptor *nextFree = hd;
+
+	while (prevFree->prev != NULL
+		&& prevFree->prev->usable
+		&& !(prevFree->prev->used)) {
+		prevFree = prevFree->prev;
+	}
+
+	while (nextFree->next != NULL
+		&& nextFree->next->usable
+		&& !(nextFree->next->used)) {
+		nextFree = nextFree->next;
+	}
+
+	if (prevFree != nextFree) {
+		hd->magic = 0;
+
+		prevFree->next = nextFree->next;
+		nextFree->next->prev = prevFree;
+	}
+}

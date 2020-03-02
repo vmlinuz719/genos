@@ -101,6 +101,13 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	intStatus((int)z);
 	termPrint("             Mallocated integer address\n");
 
+	kFree(z);
+	kFree(x);
+	kFree(y);
+
+	intStatus(kDescriptorRealSize(heapStart));
+        termPrint("             Real heap size after freeing all\n\n");
+
 end:
 	termSetColor(vgaEntColor(vgaLGreen, vgaBlue));
 	termPrint("\n***All available functions completed***\n");
