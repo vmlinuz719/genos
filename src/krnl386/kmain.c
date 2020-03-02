@@ -33,6 +33,14 @@ void intStatus(int x) {
 	termPrint(") ");
 }
 
+void consIntStatus(Console *cons, int x) {
+	char buf[9];
+	int2Hex(x, buf, 9);
+	consPrint(cons, "(0x");
+	consPrint(cons, buf);
+	consPrint(cons, ") ");
+}
+
 bool dumpMmap(multiboot_info_t *mbd) {
 	bool mmapValid = mbd->flags & MULTIBOOT_INFO_MEM_MAP;
         if (mmapValid) {
@@ -110,8 +118,10 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 
 	initGDT();
 	
-	Console *vgacons = (vgaConsoleDrv.init)(0);
-	consPrint(vgacons, "Hello from console driver\n");
+	Console *con0 = (vgaConsoleDrv.init)(0);
+	consPrint(con0, "CON0: ");
+	consIntStatus(con0, (int)con0);
+	consPrint(con0, "\n");
 
 end:
 	termSetColor(vgaEntColor(vgaLGreen, vgaBlue));
