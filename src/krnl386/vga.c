@@ -9,7 +9,7 @@ uint16_t* termBuf;
 
 void termInit() {
         termRow = termCol = 0;
-        termColor = vgaEntColor(vgaWhite, vgaBlue);
+        termColor = vgaEntColor(vgaLGray, vgaBlue);
         termBuf = (uint16_t *)VGA_ADDRESS;
 
         for (size_t y = 0; y < VGA_HEIGHT; y++) {

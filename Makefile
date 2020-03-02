@@ -4,7 +4,7 @@ INCLUDE=include
 CFLAGS=-I$(INCLUDE) -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 LDFLAGS=-ffreestanding -O2 -nostdlib -lgcc
 QEMU=qemu-system-i386
-QEMUFLAGS=
+QEMUFLAGS=-m 1G
 
 KRNL386=src/krnl386
 MEMCPY=src/fast-memcpy
