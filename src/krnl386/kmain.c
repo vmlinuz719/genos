@@ -106,7 +106,7 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	kFree(y);
 
 	intStatus(kDescriptorRealSize(heapStart));
-        termPrint("             Real heap size after freeing all\n\n");
+        termPrint("             Real heap size after freeing all\n");
 
 end:
 	termSetColor(vgaEntColor(vgaLGreen, vgaBlue));
