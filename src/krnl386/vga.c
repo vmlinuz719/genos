@@ -51,8 +51,10 @@ void termWrite(const char* buf, size_t size) {
                 termPutChar(buf[i]);
 }
 
-void termPrint(const char* str) {
-        termWrite(str, deprecatedStrlen(str));
+size_t termPrint(const char* str) {
+		size_t size = deprecatedStrlen(str);
+        termWrite(str, size);
+        return size;
 }
 
 void termEnableCursor(uint8_t cursorStart, uint8_t cursorEnd) {

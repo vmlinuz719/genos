@@ -9,6 +9,9 @@
 #include <syslib/heap.h>
 #include <idt.h>
 #include <gdt.h>
+#include <addm.h>
+#include <syslib/console.h>
+#include <vga_console.h>
 
 #if defined(__linux__)
 #error "ERROR: targeting linux (don't even try)"
@@ -106,6 +109,9 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	termPrint("Real initial heap size\n\n");
 
 	initGDT();
+	
+	Console *vgacons = (vgaConsoleDrv.init)(0);
+	consPrint(vgacons, "Hello from console driver\n");
 
 end:
 	termSetColor(vgaEntColor(vgaLGreen, vgaBlue));

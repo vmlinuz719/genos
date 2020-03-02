@@ -40,7 +40,7 @@ void termSetColor(uint8_t color);
 void termEntPut(char c, uint8_t color, size_t x, size_t y);
 void termPutChar(char c);
 void termWrite(const char* buf, size_t size);
-void termPrint(const char* str);
+size_t termPrint(const char* str);
 void termEnableCursor(uint8_t cursorStart, uint8_t cursorEnd);
 void termDisableCursor();
 
