@@ -30,6 +30,30 @@ void intStatus(int x) {
 	termPrint(") ");
 }
 
+bool dumpMmap(multiboot_info_t *mbd) {
+	bool mmapValid = mbd->flags & MULTIBOOT_INFO_MEM_MAP;
+        if (mmapValid) {
+                intStatus(mbd->mmap_addr);
+                intStatus(mbd->mmap_length);
+                termPrint("Memory map base, length\n");
+
+                multiboot_memory_map_t *entry =
+                        (multiboot_memory_map_t *)mbd->mmap_addr;
+                while (entry < (multiboot_memory_map_t *)
+                        mbd->mmap_addr + mbd->mmap_length) {
+                        if (entry->type == MULTIBOOT_MEMORY_AVAILABLE) {
+                                intStatus(entry->addr);
+                                intStatus(entry->len);
+                                termPrint("Usable memory base, length\n");
+                        }
+                        entry = (multiboot_memory_map_t *)((unsigned int) entry
+                                + entry->size + sizeof(entry->size));
+                }
+        }
+
+	return mmapValid;
+}
+
 void initGDT() {
 	GDTRegister gdtr;
         SegmentDescriptor *gdt = kMalloc(sizeof(SegmentDescriptor) * 8);
@@ -69,29 +93,12 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	}
 
 	// intStatus(mbd->flags);
-	bool mmapValid = mbd->flags & MULTIBOOT_INFO_MEM_MAP;
-	if (mmapValid) {
-		termPrint("Mmap valid\n\n");
-		intStatus(mbd->mmap_addr);
-		intStatus(mbd->mmap_length);
-		termPrint("Memory map base, length\n");
-
-		multiboot_memory_map_t *entry =
-			(multiboot_memory_map_t *)mbd->mmap_addr;
-		while (entry < (multiboot_memory_map_t *)
-			mbd->mmap_addr + mbd->mmap_length) {
-			if (entry->type == MULTIBOOT_MEMORY_AVAILABLE) {
-				intStatus(entry->addr);
-				intStatus(entry->len);
-				termPrint("Usable memory base, length\n");
-			}
-			entry = (multiboot_memory_map_t *)((unsigned int) entry
-				+ entry->size + sizeof(entry->size));
-		}
-	} else {
+	if (!dumpMmap(mbd)) {
 		termPrint("FATAL: Mmap invalid!\n");
 		goto end;
 	}
+
+	termPrint("\n");
 
 	kHeapInit(heap, HEAP_SIZE);
 
