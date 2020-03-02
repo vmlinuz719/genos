@@ -4,6 +4,7 @@
 .set FLAGS,	ALIGN | MEMINFO
 .set MAGIC,	0x1BADB002
 .set CHECKSUM,	-(MAGIC + FLAGS)
+.set HEAPSIZE,	16384
 
 /* Multiboot header */
 .section 	.multiboot
@@ -14,8 +15,8 @@
 
 /* SysV aligned early kernel stack */
 .section	bss
-.align		16
 
+.align		16
 stack_bottom:
 	.skip	16384
 

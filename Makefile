@@ -9,6 +9,10 @@ QEMUFLAGS=-m 1G
 KRNL386=src/krnl386
 MEMCPY=src/fast-memcpy
 DEPRECATED=src/deprecated
+SYSLIB=src/syslib
+
+heap.o:
+	$(CC) $(CFLAGS) -c $(SYSLIB)/heap.c -o $(SYSLIB)/heap.o
 
 strlen.o:
 	$(CC) $(CFLAGS) -c $(DEPRECATED)/strlen.c -o $(DEPRECATED)/strlen.o
@@ -25,9 +29,10 @@ kmain.o:
 bootstrap.o:
 	$(AS) $(KRNL386)/bootstrap.s -o $(KRNL386)/bootstrap.o
 
-krnl386.sys: kmain.o bootstrap.o memcpy.o vga.o strlen.o
+krnl386.sys: kmain.o bootstrap.o memcpy.o vga.o strlen.o heap.o
 	$(CC) $(LDFLAGS) $(KRNL386)/bootstrap.o $(KRNL386)/kmain.o \
 	$(MEMCPY)/memcpy.o $(KRNL386)/vga.o $(DEPRECATED)/strlen.o \
+	$(SYSLIB)/heap.o \
 	-T link/krnl386.ld -o bin/krnl386.sys
 
 test-krnl386: krnl386.sys

@@ -6,6 +6,7 @@
 #include <fast-memcpy/memcpy.h>
 #include <multiboot.h>
 #include <vga.h>
+#include <syslib/heap.h>
 
 #if defined(__linux__)
 #error "ERROR: targeting linux (don't even try)"
@@ -16,6 +17,8 @@
 #endif
 
 #define OSVERSION "GenOS a03022020"
+
+uint8_t heap[HEAP_SIZE] __attribute__((aligned(4096)));
 
 void intStatus(int x) {
 	char buf[9];
@@ -40,14 +43,14 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	} else {
 		termSetColor(vgaEntColor(vgaLRed, vgaBlue));
 		termPrint
-		("FATAL: GenOS requires a Multiboot-compliant bootloader!\n");
+		("FATAL: requires Multiboot!\n");
 		goto end;
 	}
 
 	// intStatus(mbd->flags);
 	bool mmapValid = mbd->flags & MULTIBOOT_INFO_MEM_MAP;
 	if (mmapValid) {
-		termPrint("Multiboot memory map is valid\n");
+		termPrint("Mmap valid\n\n");
 		intStatus(mbd->mmap_addr);
 		intStatus(mbd->mmap_length);
 		termPrint("Memory map base, length\n");
@@ -65,11 +68,37 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 				+ entry->size + sizeof(entry->size));
 		}
 	} else {
-		termPrint("FATAL: Memory map is invalid!\n");
+		termPrint("FATAL: Mmap invalid!\n");
 		goto end;
 	}
 
-	termPrint("TODO: Initialize huge page pool, kernel heap\n");
+	termPrint("\nInitializing heap...\n\n");
+
+	intStatus((int)heap);
+	termPrint("             Heap address\n");
+
+	kHeapInit(heap, HEAP_SIZE);
+
+	intStatus((int)heapStart);
+	intStatus((int)heapEnd);
+	termPrint("Heap start, end descriptors\n");
+
+	intStatus(kDescriptorRealSize(heapStart));
+	termPrint("             Real heap size\n\n");
+
+	termPrint("Dummy workload: testing kMalloc()...\n\n");
+
+	int *x = kMalloc(sizeof(int));
+	intStatus((int)x);
+	termPrint("             Mallocated integer address\n");
+
+	int *y = kMalloc(sizeof(int));
+	intStatus((int)y);
+	termPrint("             Mallocated integer address\n");
+
+	int *z = kMalloc(sizeof(int));
+	intStatus((int)z);
+	termPrint("             Mallocated integer address\n");
 
 end:
 	termSetColor(vgaEntColor(vgaLGreen, vgaBlue));
