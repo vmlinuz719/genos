@@ -7,6 +7,8 @@
 #include <multiboot.h>
 #include <vga.h>
 #include <syslib/heap.h>
+#include <idt.h>
+#include <gdt.h>
 
 #if defined(__linux__)
 #error "ERROR: targeting linux (don't even try)"
@@ -26,6 +28,25 @@ void intStatus(int x) {
 	termPrint("(0x");
 	termPrint(buf);
 	termPrint(") ");
+}
+
+void initGDT() {
+	GDTRegister gdtr;
+        SegmentDescriptor *gdt = kMalloc(sizeof(SegmentDescriptor) * 8);
+        intStatus((int)gdt);
+        termPrint("Global Descriptor Table address\n");
+
+        gdt[0] = createDescriptor(0, 0, 0);
+        gdt[1] = createDescriptor(0, 0xFFFFF, (GDT_CODE_PL0));
+        gdt[2] = createDescriptor(0, 0xFFFFF, (GDT_DATA_PL0));
+        gdt[3] = createDescriptor(0, 0xFFFFF, (GDT_CODE_PL3));
+        gdt[4] = createDescriptor(0, 0xFFFFF, (GDT_DATA_PL3));
+
+        gdtr.base = gdt;
+        gdtr.size = 32 * 8 - 1;
+
+        __asm__ __volatile__ ("lgdt (%0)": : "r" (&gdtr));
+        _flush_gdt();
 }
 
 void kmain(multiboot_info_t *mbd, unsigned int magic) {
@@ -72,46 +93,12 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 		goto end;
 	}
 
-	termPrint("\nInitializing heap...\n\n");
-
-	intStatus((int)heap);
-	intStatus((int)HEAP_SIZE);
-	termPrint("Heap base, length\n");
-
 	kHeapInit(heap, HEAP_SIZE);
-
-	intStatus((int)heapStart);
-	intStatus((int)heapEnd);
-	termPrint("Heap start, end descriptors\n");
 
 	intStatus(kDescriptorRealSize(heapStart));
 	termPrint("Real heap size\n\n");
 
-	termPrint("Dummy workload: testing kMalloc()...\n\n");
-
-	int *x = kMalloc(sizeof(int));
-	intStatus((int)x);
-	termPrint("Mallocated integer address\n");
-
-	int *y = kMalloc(sizeof(int));
-	intStatus((int)y);
-	termPrint("Mallocated integer address\n");
-
-	int *z = kMalloc(sizeof(int));
-	intStatus((int)z);
-	termPrint("Mallocated integer address\n");
-
-	kFree(y);
-	y = kMalloc(sizeof(int));
-	intStatus((int)y);
-	termPrint("Re-mallocated integer address\n");
-
-	kFree(x);
-	kFree(z);
-	kFree(y);
-
-	intStatus(kDescriptorRealSize(heapStart));
-        termPrint("Real heap size after kFree-ing all\n");
+	initGDT();
 
 end:
 	termSetColor(vgaEntColor(vgaLGreen, vgaBlue));

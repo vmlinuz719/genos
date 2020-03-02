@@ -42,3 +42,17 @@ _start:
 	cli
 1:	hlt
 	jmp	1b
+
+.global		_flush_gdt
+.type		_flush_gdt,	@function
+
+_flush_gdt:
+	ljmp	$0x08,		$reload_CS
+reload_CS:
+	mov	$0x10,		%ax
+	mov	%ax,		%ds
+	mov     %ax,            %es
+	mov     %ax,            %fs
+	mov     %ax,            %gs
+	mov     %ax,            %ss
+	ret
