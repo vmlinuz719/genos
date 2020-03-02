@@ -85,33 +85,33 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	termPrint("Heap start, end descriptors\n");
 
 	intStatus(kDescriptorRealSize(heapStart));
-	termPrint("             Real heap size\n\n");
+	termPrint("Real heap size\n\n");
 
 	termPrint("Dummy workload: testing kMalloc()...\n\n");
 
 	int *x = kMalloc(sizeof(int));
 	intStatus((int)x);
-	termPrint("             Mallocated integer address\n");
+	termPrint("Mallocated integer address\n");
 
 	int *y = kMalloc(sizeof(int));
 	intStatus((int)y);
-	termPrint("             Mallocated integer address\n");
+	termPrint("Mallocated integer address\n");
 
 	int *z = kMalloc(sizeof(int));
 	intStatus((int)z);
-	termPrint("             Mallocated integer address\n");
+	termPrint("Mallocated integer address\n");
 
 	kFree(y);
 	y = kMalloc(sizeof(int));
 	intStatus((int)y);
-	termPrint("             Re-mallocated integer address\n");
+	termPrint("Re-mallocated integer address\n");
 
 	kFree(x);
 	kFree(z);
 	kFree(y);
 
 	intStatus(kDescriptorRealSize(heapStart));
-        termPrint("             Real heap size after kFree-ing all\n");
+        termPrint("Real heap size after kFree-ing all\n");
 
 end:
 	termSetColor(vgaEntColor(vgaLGreen, vgaBlue));
