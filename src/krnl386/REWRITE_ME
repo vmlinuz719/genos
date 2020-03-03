@@ -1,0 +1,127 @@
+multiboot_info_t *multibootData;
+uint32_t memLower, memUpper;
+uint32_t bootDevice;
+char *commandLine;
+multiboot_module_t *modules;
+multiboot_memory_map_t *mmap;
+void *drives;
+struct multiboot_apm_info *apm;
+
+void analyzeMultiboot(Console *cons, multiboot_info_t *mbd) {
+	consPrint(cons, "Multiboot data flags:             ");
+	consHex(cons, mbd->flags);
+	consPutChar(cons, '\n');
+
+	consPrint(cons, "Basic memory info present:        ");
+        consBool(cons, mbd->flags & MULTIBOOT_INFO_MEMORY);
+        consPutChar(cons, '\n');
+	
+	if (mbd->flags & MULTIBOOT_INFO_MEM_MAP) {
+                consPrint(cons, "->                                ");
+                consHex(cons, mbd->mem_lower);
+                consPutChar(cons, '\n');
+		consPrint(cons, "->                                ");
+                consHex(cons, mbd->mem_upper);
+                consPutChar(cons, '\n');
+		memLower = mbd->mem_lower;
+		memUpper = mbd->mem_upper;
+        }
+
+	consPrint(cons, "Boot device set:                  ");
+        consBool(cons, mbd->flags & MULTIBOOT_INFO_BOOTDEV);
+        consPutChar(cons, '\n');
+	if (mbd->flags & MULTIBOOT_INFO_MEMORY) {
+                consPrint(cons, "->                                ");
+                consHex(cons, mbd->boot_device);
+		consPutChar(cons, '\n');
+		bootDevice = mbd->boot_device;
+	}
+
+	consPrint(cons, "Command line present:             ");
+        consBool(cons, mbd->flags & MULTIBOOT_INFO_CMDLINE);
+        consPutChar(cons, '\n');
+
+	if (mbd->flags & MULTIBOOT_INFO_CMDLINE) {
+		consPrint(cons, "->                                ");
+		// consPrint(cons, (char *)(mbd->cmdline));
+		// consPutChar(cons, '\n');
+		commandLine = kMalloc
+			(deprecatedStrlen((char *)(mbd->cmdline)) + 1);
+		memcpy(commandLine, (char *)(mbd->cmdline),
+			deprecatedStrlen((char *)(mbd->cmdline)) + 1);
+		consPrint(cons, commandLine);
+		consPutChar(cons, '\n');
+	}
+
+	consPrint(cons, "Modules present:                  ");
+        consBool(cons, mbd->flags & MULTIBOOT_INFO_MODS);
+        consPutChar(cons, '\n');
+
+	if (mbd->flags & MULTIBOOT_INFO_MODS) {
+                mmap = kMalloc(mbd->mods_count * sizeof(multiboot_module_t));
+                memcpy(modules, (void *)(mbd->mods_addr),
+			(mbd->mods_count * sizeof(multiboot_module_t)));
+        }
+
+	consPrint(cons, "Symbol table present:             ");
+        consBool(cons, mbd->flags & MULTIBOOT_INFO_AOUT_SYMS);
+        consPutChar(cons, '\n');
+
+	consPrint(cons, "ELF section header table present: ");
+        consBool(cons, mbd->flags & MULTIBOOT_INFO_ELF_SHDR);
+        consPutChar(cons, '\n');
+
+	consPrint(cons, "Full memory map present:          ");
+        consBool(cons, mbd->flags & MULTIBOOT_INFO_MEM_MAP);
+        consPutChar(cons, '\n');
+
+	if (mbd->flags & MULTIBOOT_INFO_MEM_MAP) {
+                mmap = kMalloc(mbd->mmap_length);
+                memcpy(mmap, (void *)(mbd->mmap_addr), mbd->mmap_length);
+        }
+
+	consPrint(cons, "Drive info present:               ");
+        consBool(cons, mbd->flags & MULTIBOOT_INFO_DRIVE_INFO);
+        consPutChar(cons, '\n');
+
+	if (mbd->flags & MULTIBOOT_INFO_MEM_MAP) {
+                drives = kMalloc(mbd->drives_length);
+                memcpy(drives, (void *)(mbd->drives_addr), mbd->drives_length);
+        }
+
+	consPrint(cons, "Config table present:             ");
+        consBool(cons, mbd->flags & MULTIBOOT_INFO_CONFIG_TABLE);
+        consPutChar(cons, '\n');
+
+	consPrint(cons, "APM table present:                ");
+        consBool(cons, mbd->flags & MULTIBOOT_INFO_APM_TABLE);
+        consPutChar(cons, '\n');
+
+	if (mbd->flags & MULTIBOOT_INFO_APM_TABLE) {
+                mmap = kMalloc(sizeof(struct multiboot_apm_info));
+                memcpy(apm, (void *)(mbd->apm_table),
+			sizeof(struct multiboot_apm_info));
+        }
+
+	multibootData = kMalloc(sizeof(multiboot_info_t));
+	memcpy(multibootData, (void *)(mbd),
+        	sizeof(multiboot_info_t));
+}
+
+void scanMmap(void **low, void **high) {
+	multiboot_memory_map_t *entry = mmap;
+	while (entry < mmap + multibootData->mmap_length) {
+                if (entry->type == MULTIBOOT_MEMORY_AVAILABLE) {
+			// consIntStatus(cons, entry->addr);
+                        // consIntStatus(cons, entry->len);
+                        // termPrint("Usable memory base, length\n");
+			if ((void *)(int)(entry->addr) <= *low) {
+				int l = (int)(entry->addr);
+				*low = (void *)(l);
+				*high = (void *)(l) + (int)(entry->len);
+			}
+                }
+                entry = (multiboot_memory_map_t *)((unsigned int) entry
+                	+ entry->size + sizeof(entry->size));
+        }
+}

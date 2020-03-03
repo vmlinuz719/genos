@@ -25,7 +25,9 @@
 
 uint8_t heap[HEAP_SIZE] __attribute__((aligned(4096)));
 
-void intStatus(int x) {
+
+
+static inline void intStatus(int x) {
 	char buf[9];
 	int2Hex(x, buf, 9);
 	termPrint("(0x");
@@ -33,12 +35,25 @@ void intStatus(int x) {
 	termPrint(") ");
 }
 
-void consIntStatus(Console *cons, int x) {
+static inline void consIntStatus(Console *cons, int x) {
 	char buf[9];
 	int2Hex(x, buf, 9);
 	consPrint(cons, "(0x");
 	consPrint(cons, buf);
 	consPrint(cons, ") ");
+}
+
+static inline void consHex(Console *cons, int x) {
+        char buf[9];
+        int2Hex(x, buf, 9);
+        // consPrint(cons, "(0x");
+        consPrint(cons, buf);
+        // consPrint(cons, ") ");
+}
+
+static inline void consBool(Console *cons, bool b) {
+	if (b) consPrint(cons, "true");
+	else consPrint(cons, "false");
 }
 
 bool dumpMmap(multiboot_info_t *mbd) {
