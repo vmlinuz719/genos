@@ -11,7 +11,7 @@ bool initialized;
 
 typedef struct vgacons {
 	void *address;
-} vgaConsoleData;
+} VGAConsoleData;
 
 void vgaConsolePutChar(void *data, char c) {
 	(void)data;
@@ -49,6 +49,7 @@ void *initVGAConsole(void *unused) {
 	initialized = true;
 	
 	result = kMalloc(sizeof(Console));
+	if (result == NULL) return NULL;
 	Console *cons = (Console *)result;
 	cons->putchar = vgaConsolePutChar;
 	cons->print = vgaConsolePrint;

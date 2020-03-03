@@ -12,6 +12,8 @@
 #include <addm.h>
 #include <syslib/console.h>
 #include <vga_console.h>
+#include <serial.h>
+#include <port.h>
 
 #if defined(__linux__)
 #error "ERROR: targeting linux (don't even try)"
@@ -107,14 +109,28 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	consIntStatus(con0, (int)con0);
 	consPrint(con0, "\n");
 	
+	uint16_t con1Port = 0x3F8;
+	
+	Console *con1 = (serialDrv.init)(&con1Port);
+	consPageBrk(con1);
+	consPrint(con1, "CON1: ");
+	consIntStatus(con1, (int)con1);
+	consPrint(con1, "\n");
+	
 	consPutChar(con0, '\n');
 	consPrint(con0, OSVERSION);
 	consPutChar(con0, '\n');
 	consPrint(con0, "Copyright 2020 vmlinuz719. All rights reserved.\n");
+	
+	consPutChar(con1, '\n');
+	consPrint(con1, OSVERSION);
+	consPutChar(con1, '\n');
+	consPrint(con1, "Copyright 2020 vmlinuz719. All rights reserved.\n");
+	consPrint(con1, "\n*** Debug console ***\n\n");
 
 end:
 	termSetColor(vgaEntColor(vgaLGreen, vgaBlue));
-	termPrint("\n***All available functions completed***");
+	termPrint("\n*** All available functions completed ***");
 
 	// for (;;) termPrint("ANIMOSITISOMIN");
 }
