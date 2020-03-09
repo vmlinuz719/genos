@@ -15,6 +15,12 @@ OBJDIR=build
 LDSCRIPTDIR=link
 BINDIR=bin
 
+gdt.o:
+	$(CC) $(CFLAGS) -c $(KRNL386)/gdt.c -o $(OBJDIR)/gdt.o
+
+8259.o:
+	$(CC) $(CFLAGS) -c $(KRNL386)/8259.c -o $(OBJDIR)/8259.o
+
 console.o:
 	$(CC) $(CFLAGS) -c $(SYSLIB)/console.c -o $(OBJDIR)/console.o
 
@@ -45,11 +51,11 @@ bootstrap.o:
 	$(AS) $(KRNL386)/bootstrap.s -o $(OBJDIR)/bootstrap.o
 
 krnl386.sys: kmain.o bootstrap.o memcpy.o vga.o strlen.o heap.o console.o \
-	vga_console.o serial.o
+	vga_console.o serial.o 8259.o gdt.o
 	$(CC) $(LDFLAGS) $(OBJDIR)/bootstrap.o $(OBJDIR)/kmain.o \
 	$(OBJDIR)/memcpy.o $(OBJDIR)/vga.o $(OBJDIR)/strlen.o \
 	$(OBJDIR)/heap.o $(OBJDIR)/console.o $(OBJDIR)/vga_console.o \
-	$(OBJDIR)/serial.o \
+	$(OBJDIR)/serial.o $(OBJDIR)/gdt.o $(OBJDIR)/8259.o \
 	-T $(LDSCRIPTDIR)/krnl386.ld -o $(BINDIR)/krnl386.sys
 
 test-krnl386: krnl386.sys

@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#define MAX_CONSOLE 10
+
 // This is the interface for a basic printer/console
 // It implements printer-like functionality.
 // TODO: keyboard/read support
@@ -28,6 +30,8 @@ Example:
 	consPrint(cons, "Hello from console driver land!\n");
 	=>	(cons->print)(cons->data, "Hello from console driver land!\n");
 */
+
+extern Console *consoles[];
 
 #endif
 

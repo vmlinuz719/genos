@@ -77,4 +77,6 @@ typedef struct gdtr {
 	SegmentDescriptor *base;
 } __attribute__((packed)) GDTRegister;
 
+GDTRegister initGDT(void);
+
 #endif

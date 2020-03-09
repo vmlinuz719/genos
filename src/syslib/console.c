@@ -16,3 +16,4 @@ void consPageBrk(Console *cons) {
 	(cons->pagebrk)(cons->data);
 }
 
+Console *consoles[MAX_CONSOLE];

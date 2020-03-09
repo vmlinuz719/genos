@@ -13,6 +13,7 @@
 #include <syslib/console.h>
 #include <vga_console.h>
 #include <serial.h>
+#include <8259.h>
 #include <port.h>
 
 #if defined(__linux__)
@@ -58,24 +59,14 @@ static inline void consBool(Console *cons, bool b) {
 	else consPrint(cons, "false");
 }
 
-void initGDT() {
-	GDTRegister gdtr;
-	SegmentDescriptor *gdt = kMalloc(sizeof(SegmentDescriptor) * 8);
-	// intStatus((int)gdt);
-	// termPrint("Global Descriptor Table address\n");
-
-	gdt[0] = createDescriptor(0, 0, 0);
-	gdt[1] = createDescriptor(0, 0xFFFFF, (GDT_CODE_PL0));
-	gdt[2] = createDescriptor(0, 0xFFFFF, (GDT_DATA_PL0));
-	gdt[3] = createDescriptor(0, 0xFFFFF, (GDT_CODE_PL3));
-	gdt[4] = createDescriptor(0, 0xFFFFF, (GDT_DATA_PL3));
-
-	gdtr.base = gdt;
-	gdtr.size = 32 * 8 - 1;
-
-	__asm__ __volatile__ ("lgdt (%0)": : "r" (&gdtr));
-	_flush_gdt();
+void kbd() {
+	//consPrint(consoles[0], "Interrupted!\n");
+	unsigned char code = inb(0x60);
+	consPutChar(consoles[0], code);
+	i8259EOI(0);
 }
+
+extern void *kbdWrapper;
 
 void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	termInit();
@@ -104,29 +95,57 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 
 	initGDT();
 	
-	Console *con0 = (vgaConsoleDrv.init)(0);
-	consPrint(con0, "CON0: ");
-	consIntStatus(con0, (int)con0);
-	consPrint(con0, "\n");
+	consoles[0] = (vgaConsoleDrv.init)(0);
+	consPutChar(consoles[0], '\n');
+	consPrint(consoles[0], "CON0: ");
+	consIntStatus(consoles[0], (int)consoles[0]);
+	consPrint(consoles[0], "\n\n");
 	
 	uint16_t con1Port = 0x3F8;
 	
-	Console *con1 = (serialDrv.init)(&con1Port);
-	consPageBrk(con1);
-	consPrint(con1, "CON1: ");
-	consIntStatus(con1, (int)con1);
-	consPrint(con1, "\n");
+	consoles[1] = (serialDrv.init)(&con1Port);
+	consPutChar(consoles[1], '\n');
+	consPrint(consoles[1], "CON1: ");
+	consIntStatus(consoles[1], (int)consoles[1]);
+	consPrint(consoles[1], "\n\n");
 	
-	consPutChar(con0, '\n');
-	consPrint(con0, OSVERSION);
-	consPutChar(con0, '\n');
-	consPrint(con0, "Copyright 2020 vmlinuz719. All rights reserved.\n");
+	consPrint(consoles[0], OSVERSION);
+	consPutChar(consoles[0], '\n');
+	consPrint(consoles[0], "Copyright 2020 vmlinuz719. All rights reserved.\n");
 	
-	consPutChar(con1, '\n');
-	consPrint(con1, OSVERSION);
-	consPutChar(con1, '\n');
-	consPrint(con1, "Copyright 2020 vmlinuz719. All rights reserved.\n");
-	consPrint(con1, "\n*** Debug console ***\n\n");
+	consPrint(consoles[1], "Hello from hardware abstraction land!\n");
+	
+	consPrint(consoles[1], "Remapping PIC and masking all.\n");
+	i8259Remap(LEADER_PIC_REMAP, FOLLOWER_PIC_REMAP);
+	i8259MaskAll();
+	
+	consPrint(consoles[1], "Allocating IDT.\n");
+	InterruptDescriptor *idt = kMalloc(sizeof(SegmentDescriptor) * 256);
+	consPrint(consoles[1], "Allocated ");
+	consIntStatus(consoles[1], (int)idt);
+	consPrint(consoles[1], "\n");
+	
+	consPrint(consoles[1], "Loading IDT.\n");
+	IDTRegister idtr;
+	idtr.limit = sizeof(SegmentDescriptor) * 256;
+	idtr.base = idt;
+	
+	consPrint(consoles[1], "Survived, setting up keyboard irq.\n");
+	unsigned long kbdcall = (unsigned long)&kbdWrapper;
+
+	idt[0x31].offsetLow = kbdcall & 0xffff;
+	idt[0x31].selector = 0x08; /* KERNEL_CODE_SEGMENT_OFFSET */
+	idt[0x31].mustBeZero = 0;
+	idt[0x31].type = 0x8e; /* INTERRUPT_GATE */
+	idt[0x31].offsetHigh = (kbdcall & 0xffff0000) >> 16;
+	
+	i8259ClearMask(1);
+	__asm__ __volatile__ ("lidt (%0)": : "r" (&idtr));
+	asm("sti");
+	for (;;) {
+		for (int x = 0; x < 100000000; x++) {}
+		consPrint(consoles[1], "running ");
+	}
 
 end:
 	termSetColor(vgaEntColor(vgaLGreen, vgaBlue));

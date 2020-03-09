@@ -56,3 +56,16 @@ reload_CS:
 	mov     %ax,            %gs
 	mov     %ax,            %ss
 	ret
+
+/* ISR wrappers. TODO: move to new file */
+
+.globl		kbdWrapper
+.align		4
+
+kbdWrapper:
+	pusha
+	cld
+	call kbd
+	popa
+	iret
+
