@@ -15,6 +15,7 @@
 #include <serial.h>
 #include <8259.h>
 #include <port.h>
+#include <conshelper.h>
 
 #if defined(__linux__)
 #error "ERROR: targeting linux (don't even try)"
@@ -24,45 +25,20 @@
 #error "ERROR: targeting wrong architecture (needs x86)"
 #endif
 
-#define OSVERSION "GenOS a03022020"
+#define OSVERSION "GenOS a03102020"
 
 uint8_t heap[HEAP_SIZE] __attribute__((aligned(4096)));
 
-
-
-static inline void intStatus(int x) {
-	char buf[9];
-	int2Hex(x, buf, 9);
-	termPrint("(0x");
-	termPrint(buf);
-	termPrint(") ");
-}
-
-static inline void consIntStatus(Console *cons, int x) {
-	char buf[9];
-	int2Hex(x, buf, 9);
-	consPrint(cons, "(0x");
-	consPrint(cons, buf);
-	consPrint(cons, ") ");
-}
-
-static inline void consHex(Console *cons, int x) {
-	char buf[9];
-	int2Hex(x, buf, 9);
-	// consPrint(cons, "(0x");
-	consPrint(cons, buf);
-	// consPrint(cons, ") ");
-}
-
-static inline void consBool(Console *cons, bool b) {
-	if (b) consPrint(cons, "true");
-	else consPrint(cons, "false");
-}
+bool done;
 
 void kbd() {
 	//consPrint(consoles[0], "Interrupted!\n");
 	unsigned char code = inb(0x60);
-	consPutChar(consoles[0], code);
+	if (code == 0x1d) done = true;
+	else {
+		consHexByte(consoles[0], code);
+		consPutChar(consoles[0], ' ');
+	}
 	i8259EOI(0);
 }
 
@@ -102,7 +78,6 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	consPrint(consoles[0], "\n\n");
 	
 	uint16_t con1Port = 0x3F8;
-	
 	consoles[1] = (serialDrv.init)(&con1Port);
 	consPutChar(consoles[1], '\n');
 	consPrint(consoles[1], "CON1: ");
@@ -113,26 +88,15 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	consPutChar(consoles[0], '\n');
 	consPrint(consoles[0], "Copyright 2020 vmlinuz719. All rights reserved.\n");
 	
-	consPrint(consoles[1], "Hello from hardware abstraction land!\n");
-	
-	consPrint(consoles[1], "Remapping PIC and masking all.\n");
 	i8259Remap(LEADER_PIC_REMAP, FOLLOWER_PIC_REMAP);
 	i8259MaskAll();
-	
-	consPrint(consoles[1], "Allocating IDT.\n");
+
 	InterruptDescriptor *idt = kMalloc(sizeof(SegmentDescriptor) * 256);
-	consPrint(consoles[1], "Allocated ");
-	consIntStatus(consoles[1], (int)idt);
-	consPrint(consoles[1], "\n");
-	
-	consPrint(consoles[1], "Loading IDT.\n");
 	IDTRegister idtr;
 	idtr.limit = sizeof(SegmentDescriptor) * 256;
 	idtr.base = idt;
 	
-	consPrint(consoles[1], "Survived, setting up keyboard irq.\n");
 	unsigned long kbdcall = (unsigned long)&kbdWrapper;
-
 	idt[0x31].offsetLow = kbdcall & 0xffff;
 	idt[0x31].selector = 0x08; /* KERNEL_CODE_SEGMENT_OFFSET */
 	idt[0x31].mustBeZero = 0;
@@ -140,12 +104,24 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	idt[0x31].offsetHigh = (kbdcall & 0xffff0000) >> 16;
 	
 	i8259ClearMask(1);
+	
 	__asm__ __volatile__ ("lidt (%0)": : "r" (&idtr));
+	consPrint(consoles[0], "\nDumping keycodes now, ctrl to exit:\n");
 	asm("sti");
-	for (;;) {
-		for (int x = 0; x < 100000000; x++) {}
-		consPrint(consoles[1], "running ");
+	
+	char spinner[] = "|/-\\";
+	int spinnerIdx = 0;
+	while (!done) {
+		consPrint(consoles[1], "\b");
+		consPutChar(consoles[1], spinner[spinnerIdx]);
+		spinnerIdx = (spinnerIdx + 1) % 4;
 	}
+	
+	consPutChar(consoles[1], '\n');
+	consPrint(consoles[1], "...done!\n");
+	
+	consPutChar(consoles[0], '\n');
+	consPrint(consoles[0], "Exiting.\n");
 
 end:
 	termSetColor(vgaEntColor(vgaLGreen, vgaBlue));
