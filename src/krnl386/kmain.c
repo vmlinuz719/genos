@@ -52,6 +52,8 @@ void bugcheck(intState state) {
 	termPrint("Sorry, a system error ");
 	termHex(state.status);
 	termPrint(" occurred at ");
+	termHexShort(state.CS);
+	termPutChar(':');
 	termHex(state.EIP);
 	termPrint(".\n\n");
 	

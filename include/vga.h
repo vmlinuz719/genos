@@ -54,4 +54,12 @@ static inline void termHex(int x) {
 	// consPrint(cons, ") ");
 }
 
+static inline void termHexShort(int x) {
+	char buf[5];
+	int2Hex(x, buf, 5);
+	// consPrint(cons, "(0x");
+	termPrint(buf);
+	// consPrint(cons, ") ");
+}
+
 #endif
