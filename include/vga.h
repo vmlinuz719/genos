@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <deprecated/strlen.h>
 
 #define VGA_WIDTH	80
 #define VGA_HEIGHT	25
@@ -36,6 +37,7 @@ static inline uint16_t vgaEnt(unsigned char c, uint8_t color) {
 }
 
 void termInit();
+void termInitColor(uint8_t color);
 void termSetColor(uint8_t color);
 void termEntPut(char c, uint8_t color, size_t x, size_t y);
 void termPutChar(char c);
@@ -43,5 +45,13 @@ void termWrite(const char* buf, size_t size);
 size_t termPrint(const char* str);
 void termEnableCursor(uint8_t cursorStart, uint8_t cursorEnd);
 void termDisableCursor();
+
+static inline void termHex(int x) {
+	char buf[9];
+	int2Hex(x, buf, 9);
+	// consPrint(cons, "(0x");
+	termPrint(buf);
+	// consPrint(cons, ") ");
+}
 
 #endif

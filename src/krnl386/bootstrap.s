@@ -65,7 +65,19 @@ reload_CS:
 kbdWrapper:
 	pusha
 	cld
-	call kbd
+	push	$0xDEADBEEF
+	call	kbd
+	pop		%eax
 	popa
 	iret
+	
+.globl		dfaultWrapper
+.align		4
+
+dfaultWrapper:
+	pusha
+	cld
+	push	$0x00FF0001 // !SYS-F-UNHANDLED, unhandled exception in kernel!
+	call	bugcheck
+	// no provision to return from here!
 

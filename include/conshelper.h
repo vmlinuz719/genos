@@ -1,6 +1,7 @@
 #if !defined (_CONSHELPER_H_)
 #define _CONSHELPER_H_
 #include <syslib/console.h>
+#include <deprecated/strlen.h>
 
 static inline void consIntStatus(Console *cons, int x) {
 	char buf[9];

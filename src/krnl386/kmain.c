@@ -9,6 +9,7 @@
 #include <syslib/heap.h>
 #include <idt.h>
 #include <gdt.h>
+#include <irq.h>
 #include <addm.h>
 #include <syslib/console.h>
 #include <vga_console.h>
@@ -25,24 +26,57 @@
 #error "ERROR: targeting wrong architecture (needs x86)"
 #endif
 
-#define OSVERSION "GenOS a03102020"
+#define OSVERSION "GenOS a03112020"
 
 uint8_t heap[HEAP_SIZE] __attribute__((aligned(4096)));
 
 bool done;
 
-void kbd() {
+void kbd(intState state) {
 	//consPrint(consoles[0], "Interrupted!\n");
 	unsigned char code = inb(0x60);
 	if (code == 0x1d) done = true;
-	else {
+	else if (state.status == 0xDEADBEEF) {
 		consHexByte(consoles[0], code);
 		consPutChar(consoles[0], ' ');
 	}
 	i8259EOI(0);
 }
 
+void bugcheck(intState state) {
+	(void)state;
+	termInitColor(vgaEntColor(vgaLRed, vgaBlack));
+	termPrint("\n*** ");
+	termPrint(OSVERSION);
+	termPrint(" BUGCHECK ***\n\n");
+	termPrint("Sorry, a system error ");
+	termHex(state.status);
+	termPrint(" occurred at ");
+	termHex(state.EIP);
+	termPrint(".\n\n");
+	
+	termPrint("EAX: "); termHex(state.EAX); termPutChar(' ');
+	termPrint("EBX: "); termHex(state.EBX); termPutChar(' ');
+	termPrint("ECX: "); termHex(state.ECX); termPutChar(' ');
+	termPrint("EDX: "); termHex(state.EDX); termPutChar('\n');
+	
+	termPrint("ESP: "); termHex(state.ESP); termPutChar(' ');
+	termPrint("EBP: "); termHex(state.EBP); termPutChar('\n');
+	termPrint("ESI: "); termHex(state.ESI); termPutChar(' ');
+	termPrint("EDI: "); termHex(state.EDI); termPutChar('\n');
+	
+	termPrint("EFL: "); termHex(state.EFLAGS); termPutChar('\n');
+	termPrint("ERR: "); termHex(state.error); termPutChar('\n');
+	
+	termPrint("\nSystem halted. Record this information and contact your system administrator.\n");
+	
+	asm("cli");
+	asm("hlt");
+	__builtin_unreachable();
+}
+
 extern void *kbdWrapper;
+extern void *dfaultWrapper;
 
 void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	termInit();
@@ -96,6 +130,17 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	idtr.limit = sizeof(SegmentDescriptor) * 256;
 	idtr.base = idt;
 	
+	// register double fault handler
+	
+	unsigned long dfcall = (unsigned long)&dfaultWrapper;
+	idt[0x08].offsetLow = dfcall & 0xffff;
+	idt[0x08].selector = 0x08; /* KERNEL_CODE_SEGMENT_OFFSET */
+	idt[0x08].mustBeZero = 0;
+	idt[0x08].type = 0x8e; /* INTERRUPT_GATE */
+	idt[0x08].offsetHigh = (dfcall & 0xffff0000) >> 16;
+	
+	// register keyboard handler
+	
 	unsigned long kbdcall = (unsigned long)&kbdWrapper;
 	idt[0x31].offsetLow = kbdcall & 0xffff;
 	idt[0x31].selector = 0x08; /* KERNEL_CODE_SEGMENT_OFFSET */
@@ -106,6 +151,8 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	i8259ClearMask(1);
 	
 	__asm__ __volatile__ ("lidt (%0)": : "r" (&idtr));
+	
+	
 	consPrint(consoles[0], "\nDumping keycodes now, ctrl to exit:\n");
 	asm("sti");
 	
@@ -124,8 +171,8 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	consPrint(consoles[0], "Exiting.\n");
 
 end:
-	termSetColor(vgaEntColor(vgaLGreen, vgaBlue));
-	termPrint("\n*** All available functions completed ***");
+	// should be unreachable, double fault if we ever get here
+	asm("int $255");
 
 	// for (;;) termPrint("ANIMOSITISOMIN");
 }

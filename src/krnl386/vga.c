@@ -20,6 +20,19 @@ void termInit() {
         }
 }
 
+void termInitColor(uint8_t color) {
+        termRow = termCol = 0;
+        termColor = color;
+        termBuf = (uint16_t *)VGA_ADDRESS;
+
+        for (size_t y = 0; y < VGA_HEIGHT; y++) {
+                for (size_t x = 0; x < VGA_WIDTH; x++) {
+                        const size_t i = y * VGA_WIDTH + x;
+                        termBuf[i] = vgaEnt(' ', termColor);
+                }
+        }
+}
+
 void termSetColor(uint8_t color) {
         termColor = color;
 }
