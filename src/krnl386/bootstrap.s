@@ -77,7 +77,7 @@ kbdWrapper:
 dfaultWrapper:
 	pusha
 	cld
-	push	$0x00FF0001 // !SYS-F-UNHANDLED, unhandled exception in kernel!
+	push	$0xFFFF0001 // !SYS-F-UNHANDLED, unhandled exception in kernel!
 	call	bugcheck
 	// no provision to return from here!
 

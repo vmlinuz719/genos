@@ -44,11 +44,10 @@ void kbd(intState state) {
 }
 
 void bugcheck(intState state) {
-	(void)state;
 	termInitColor(vgaEntColor(vgaLRed, vgaBlack));
-	termPrint("\n*** ");
+	termPrint("\n");
 	termPrint(OSVERSION);
-	termPrint(" BUGCHECK ***\n\n");
+	termPrint("\n\n");
 	termPrint("Sorry, a system error ");
 	termHex(state.status);
 	termPrint(" occurred at ");
