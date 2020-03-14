@@ -57,27 +57,3 @@ reload_CS:
 	mov     %ax,            %ss
 	ret
 
-/* ISR wrappers. TODO: move to new file */
-
-.globl		kbdWrapper
-.align		4
-
-kbdWrapper:
-	pusha
-	cld
-	push	$0xDEADBEEF
-	call	kbd
-	pop		%eax
-	popa
-	iret
-	
-.globl		dfaultWrapper
-.align		4
-
-dfaultWrapper:
-	pusha
-	cld
-	push	$0xFFFF0001 // !SYS-F-UNHANDLED, unhandled exception in kernel!
-	call	bugcheck
-	// no provision to return from here!
-
