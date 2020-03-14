@@ -29,6 +29,39 @@ SegmentDescriptor *gdt;
 
 uint8_t heap[HEAP_SIZE] __attribute__((aligned(4096)));
 
+bool iterateMmap32(multiboot_info_t *mbd,
+		void (*fn) (multiboot_memory_map_t *)) {
+	bool mmapValid = mbd->flags & MULTIBOOT_INFO_MEM_MAP;
+	if (mmapValid) {
+		multiboot_memory_map_t *entry =
+			(multiboot_memory_map_t *)mbd->mmap_addr;
+		while (entry < (multiboot_memory_map_t *)
+			mbd->mmap_addr + mbd->mmap_length) {
+			if (entry->len != 0 && entry->addr <= 0xFFFFFFFF
+				&& entry->len <= 0xFFFFFFFF) {
+				(*fn)(entry);
+			}
+			entry = (multiboot_memory_map_t *)((unsigned int) entry
+				+ entry->size + sizeof(entry->size));
+		}
+	}
+
+	return mmapValid;
+}
+
+void describeMemoryRegion(multiboot_memory_map_t *region) {
+	if (region->type == MULTIBOOT_MEMORY_AVAILABLE) {
+		consIntStatus(consoles[1], region->addr);
+		consIntStatus(consoles[1], region->len);
+		consPrint(consoles[1], "Usable memory base, length\n");
+	}
+	else {
+		consIntStatus(consoles[1], region->addr);
+		consIntStatus(consoles[1], region->len);
+		consPrint(consoles[1], "Unusable memory base, length\n");
+	}
+}
+
 void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	(void)mbd; (void)magic;
 
@@ -52,11 +85,14 @@ void kmain(multiboot_info_t *mbd, unsigned int magic) {
 	
 	uint16_t con1Port = 0x3F8;
 	consoles[1] = (serialDrv.init)(&con1Port);
-	consHello(consoles[1]);	
-			
-	asm("sti");
+	consHello(consoles[1]);
+	
+	iterateMmap32(mbd, describeMemoryRegion);
+	consIntStatus(consoles[1], mbd->mods_count);
+	consPrint(consoles[1], "modules loaded\n\n");
 	
 	consPrint(consoles[0], "Dumping keycodes now, ctrl to exit:\n");
+	asm("sti");
 	
 	char spinner[] = "|/-\\";
 	int spinnerIdx = 0;
